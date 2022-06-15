@@ -37,3 +37,6 @@ build/
 
 ## Bot information ##
 *.env
+
+## Logs ##
+*.log
