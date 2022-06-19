@@ -8,12 +8,11 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.digiunion.unifiedbots.twitch.listeners.commands.CommandConsumer;
-import com.digiunion.unifiedbots.twitch.listeners.commands.CommandListener;
 import com.digiunion.unifiedbots.twitch.services.info.InfoService;
 import com.github.philippheuer.credentialmanager.domain.OAuth2Credential;
 import com.github.twitch4j.TwitchClient;
 import com.github.twitch4j.TwitchClientBuilder;
-import com.github.twitch4j.chat.events.CommandEvent;
+import com.github.twitch4j.chat.events.channel.ChannelMessageEvent;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -70,13 +69,13 @@ public final class Bot implements BotService {
 
     log.info("Joining {}'s channel", channel);
 
-    if (client.getChat().isChannelJoined(channel)) {
+    if (!client.getChat().isChannelJoined(channel)) {
 
       client.getChat().sendMessage(channel,
           "Hello %s and chat, I came here because my coder told me that عندكم مضبي وعلشانكم اهل الديرة قصمان, راح تضبطوني OpieOP "
               .formatted(channel));
 
-      client.getChat().leaveChannel(channel);
+      client.getChat().joinChannel(channel);
 
       log.info("Joined {}'s channel", channel);
       return true;
@@ -121,7 +120,7 @@ public final class Bot implements BotService {
 
     initialize();
 
-    client.getChat().getEventManager().onEvent(CommandEvent.class, commandEvent);
+    client.getChat().getEventManager().onEvent(ChannelMessageEvent.class, commandEvent);
 
   }
 
