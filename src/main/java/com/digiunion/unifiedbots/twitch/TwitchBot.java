@@ -1,13 +1,18 @@
 package com.digiunion.unifiedbots.twitch;
 
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.digiunion.unifiedbots.twitch.entity.channel.Channel;
 import com.digiunion.unifiedbots.twitch.listeners.commands.CommandConsumer;
+import com.digiunion.unifiedbots.twitch.listeners.message.MessageService;
+import com.digiunion.unifiedbots.twitch.repositories.channel.ChannelRepository;
 import com.digiunion.unifiedbots.twitch.services.info.InfoService;
 import com.github.philippheuer.credentialmanager.domain.OAuth2Credential;
 import com.github.twitch4j.TwitchClient;
@@ -20,25 +25,35 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Scope(value = "singleton")
 @Component
-public final class Bot implements BotService {
-
+public final class TwitchBot implements BotService {
   @Autowired
   @Qualifier("info")
-  InfoService info;
+  static InfoService info;
 
   @Autowired
   @Qualifier("commandListener")
   CommandConsumer commandEvent;
 
-  OAuth2Credential credential = new OAuth2Credential("twitch", info.token);
+  @Autowired
+  @Qualifier("messageListener")
+  MessageService messageEvent;
+
+  @Autowired
+  ChannelRepository channelRepository;
 
   @Getter
-  TwitchClient client = TwitchClientBuilder.builder()
+  static OAuth2Credential credential = new OAuth2Credential("twitch", info.token);
+
+  @Getter
+  static TwitchClient client = TwitchClientBuilder.builder()
       .withEnableChat(true)
       .withDefaultAuthToken(credential)
       .withChatAccount(credential)
       .withCommandTrigger("!")
-      .withScheduledThreadPoolExecutor(new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors()))
+      // .withScheduledThreadPoolExecutor(new
+      // ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors()))
+      .withEnableHelix(true)
+      .withEnableGraphQL(true)
       .build();
 
   @Override
@@ -78,13 +93,16 @@ public final class Bot implements BotService {
       client.getChat().joinChannel(channel);
 
       log.info("Joined {}'s channel", channel);
+
+      channelRepository.save(new Channel(channel));
+
       return true;
     }
 
     client.getChat().sendMessage("Digital_Red_Panda",
         "خلصت العزيمة وش قاعد تقول, القصمان ولو".formatted(channel));
 
-    log.warn("Failed to join {}'s channel, channel is already joined", channel);
+    log.error("Failed to join {}'s channel, channel is already joined", channel);
     return false;
 
   }
@@ -101,6 +119,8 @@ public final class Bot implements BotService {
 
       client.getChat().leaveChannel(channel);
 
+      // channelRepository.deleteByName;
+
       log.info("Left {}'s channel", channel);
 
       return true;
@@ -110,7 +130,7 @@ public final class Bot implements BotService {
     client.getChat().sendMessage("Digital_Red_Panda",
         "خلصت العزيمة وش قاعد تقول, القصمان ولو");
 
-    log.warn("Failed to leave {}'s channel, channel isn't joined", channel);
+    log.error("Failed to leave {}'s channel, channel isn't joined", channel);
 
     return false;
 
@@ -120,7 +140,24 @@ public final class Bot implements BotService {
 
     initialize();
 
+    load(channelRepository.findAll());
+
     client.getChat().getEventManager().onEvent(ChannelMessageEvent.class, commandEvent);
+
+    client.getChat().getEventManager().onEvent(ChannelMessageEvent.class, messageEvent);
+
+  }
+
+  @Override
+  public void load(List<Channel> list) {
+
+    if (list.isEmpty()) {
+      log.error("Could not initiate loading channels; the list is empty");
+      return;
+    }
+
+    list.stream().forEach(channel -> joinChannel(channel.getChannelName()));
+    log.info("Loaded all of stored channels");
 
   }
 
