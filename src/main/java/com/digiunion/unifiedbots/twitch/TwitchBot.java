@@ -2,7 +2,6 @@ package com.digiunion.unifiedbots.twitch;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -14,6 +13,7 @@ import com.digiunion.unifiedbots.twitch.listeners.commands.CommandConsumer;
 import com.digiunion.unifiedbots.twitch.listeners.message.MessageService;
 import com.digiunion.unifiedbots.twitch.repositories.channel.ChannelRepository;
 import com.digiunion.unifiedbots.twitch.services.info.InfoService;
+
 import com.github.philippheuer.credentialmanager.domain.OAuth2Credential;
 import com.github.twitch4j.TwitchClient;
 import com.github.twitch4j.TwitchClientBuilder;
@@ -23,7 +23,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Scope(value = "singleton")
 @Component
 public final class TwitchBot implements BotService {
   @Autowired
@@ -86,23 +85,33 @@ public final class TwitchBot implements BotService {
 
     if (!client.getChat().isChannelJoined(channel)) {
 
+      if (channelRepository.existsById(channel)) {
+
+        client.getChat().joinChannel(channel);
+
+        log.info("{} has been loaded", channel);
+
+        return true;
+
+      }
+
       client.getChat().sendMessage(channel,
           "Hello %s and chat, I came here because my coder told me that عندكم مضبي وعلشانكم اهل الديرة قصمان, راح تضبطوني OpieOP "
               .formatted(channel));
-
-      client.getChat().joinChannel(channel);
 
       log.info("Joined {}'s channel", channel);
 
       channelRepository.save(new Channel(channel));
 
       return true;
+
     }
 
     client.getChat().sendMessage("Digital_Red_Panda",
         "خلصت العزيمة وش قاعد تقول, القصمان ولو".formatted(channel));
 
-    log.error("Failed to join {}'s channel, channel is already joined", channel);
+    log.error("Failed to join {}'s channel; channel is already joined", channel);
+
     return false;
 
   }
@@ -112,39 +121,53 @@ public final class TwitchBot implements BotService {
 
     log.info("Leaving {}'s channel", channel);
 
-    if (client.getChat().isChannelJoined(channel)) {
+    if (!client.getChat().isChannelJoined(channel)) {
 
-      client.getChat().sendMessage(channel,
-          "علشانكم اكلتو بدوني بطلع tc %s and chat Sadge".formatted(channel));
+      client.getChat().sendMessage("Digital_Red_Panda",
+          "خلصت العزيمة وش قاعد تقول, القصمان ولو");
 
-      client.getChat().leaveChannel(channel);
+      log.error("Failed to leave {}'s channel; channel isn't joined", channel);
 
-      // channelRepository.deleteByName;
-
-      log.info("Left {}'s channel", channel);
-
-      return true;
+      return false;
 
     }
 
-    client.getChat().sendMessage("Digital_Red_Panda",
-        "خلصت العزيمة وش قاعد تقول, القصمان ولو");
+    client.getChat().sendMessage(channel,
+        "علشانكم اكلتو بدوني بطلع tc %s and chat Sadge".formatted(channel));
 
-    log.error("Failed to leave {}'s channel, channel isn't joined", channel);
+    client.getChat().leaveChannel(channel);
 
-    return false;
+    channelRepository.deleteById(channel);
+
+    log.info("Left and removed {}'s channel", channel);
+
+    return true;
 
   }
 
   public void run() {
 
-    initialize();
+    CompletableFuture.runAsync(() -> initialize()).thenRun(() -> load(channelRepository.findAll())).join();
 
-    load(channelRepository.findAll());
+    CompletableFuture.allOf(
+        CompletableFuture
+            .runAsync(() -> client.getChat().getEventManager().onEvent(ChannelMessageEvent.class, commandEvent)),
+        CompletableFuture
+            .runAsync(() -> client
+                .getChat().getEventManager().onEvent(ChannelMessageEvent.class, messageEvent)))
+        .join();
 
-    client.getChat().getEventManager().onEvent(ChannelMessageEvent.class, commandEvent);
-
-    client.getChat().getEventManager().onEvent(ChannelMessageEvent.class, messageEvent);
+    /*
+     * initialize();
+     * 
+     * load(channelRepository.findAll());
+     * 
+     * client.getChat().getEventManager().onEvent(ChannelMessageEvent.class,
+     * commandEvent);
+     * 
+     * client.getChat().getEventManager().onEvent(ChannelMessageEvent.class,
+     * messageEvent);
+     */
 
   }
 

@@ -15,7 +15,7 @@ public non-sealed class MessageListener implements MessageService {
   @Override
   public void accept(ChannelMessageEvent event) {
 
-    if (event.getMessage().startsWith("!")) {
+    if (!(event.getMessage().charAt(0) == '!')) {
 
       String channel = event.getChannel().getName();
 

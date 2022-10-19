@@ -1,31 +1,22 @@
 package com.digiunion.unifiedbots.twitch.listeners.commands;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+
 import com.digiunion.unifiedbots.twitch.BotService;
 import com.digiunion.unifiedbots.twitch.TwitchBot;
-import com.digiunion.unifiedbots.twitch.entity.channel.Channel;
 import com.digiunion.unifiedbots.twitch.repositories.channel.ChannelRepository;
-import com.digiunion.unifiedbots.twitch.services.date.counter.DateCounter;
 import com.digiunion.unifiedbots.twitch.services.info.InfoService;
 import com.github.twitch4j.chat.events.channel.ChannelMessageEvent;
-import com.github.twitch4j.helix.domain.Stream;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@Async
 public non-sealed class CommandListener implements CommandConsumer {
 
   @Autowired
@@ -39,27 +30,25 @@ public non-sealed class CommandListener implements CommandConsumer {
   @Autowired
   ChannelRepository channelRepository;
 
-  DateCounter counter;
-
-  Optional<CompletableFuture<Void>> completableFuture = Optional.empty();
+  // DateCounter counter;
 
   @Override
   public void accept(ChannelMessageEvent event) {
 
-    var user = event.getUser().getName();
-
-    var channel = event.getChannel().getName();
-
     var commandContent = Arrays.asList(event.getMessage().split(" "));
 
-    var command = commandContent.get(0).toLowerCase().replaceFirst("!", "");
+    var user = event.getUser().getName();
 
-    var client = TwitchBot.getClient();
+    if (commandContent.get(0).charAt(0) == '!'
+        && user.equals("digital_red_panda")) {
 
-    if (commandContent.get(0).startsWith("!") && user.equals("digital_red_panda")) {
+      var channel = event.getChannel().getName();
 
-      log.info("{} used {} which contains {} on {}", user, command, commandContent,
-          channel);
+      var command = commandContent.get(0).toLowerCase().replaceFirst("!", "");
+
+      var client = TwitchBot.getClient();
+
+      log.info("[{}] {}: {} {}", channel, user, command, commandContent);
 
       if (command.equals("join")) {
 
@@ -82,8 +71,6 @@ public non-sealed class CommandListener implements CommandConsumer {
 
           botClient.leaveChannel(commandContent.get(1));
 
-          channelRepository.save(null);
-
           return;
 
         }
@@ -92,8 +79,12 @@ public non-sealed class CommandListener implements CommandConsumer {
             "moerQatsim 💢 ما علموك اسلافك كيف تفرق بين الكورة الطايرة والكليجة؟ %s".formatted(user));
 
       }
-      List<Integer> numberList = List.of(2, 7, 3);
-      var someList = numberList.stream().filter(number -> number % 2 != 0).toList();
+
+      if (command.equals("channels"))
+
+        event.getTwitchChat().sendMessage(channel,
+            "Joined channels are %s"
+                .formatted(channelRepository.getAllChannelIds().toString().replaceAll("[\\[\\]]", "")));
 
       /*
        * if (command.equals("poll")) {
