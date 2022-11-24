@@ -1,10 +1,10 @@
 package com.digiunion.unifiedbots.twitch.listeners.commands;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import com.digiunion.unifiedbots.twitch.BotService;
@@ -30,9 +30,8 @@ public non-sealed class CommandListener implements CommandConsumer {
   @Autowired
   ChannelRepository channelRepository;
 
-  // DateCounter counter;
-
   @Override
+  @Async
   public void accept(ChannelMessageEvent event) {
 
     var commandContent = Arrays.asList(event.getMessage().split(" "));

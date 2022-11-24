@@ -5,7 +5,6 @@ import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.digiunion.unifiedbots.twitch.entity.channel.Channel;
@@ -13,7 +12,6 @@ import com.digiunion.unifiedbots.twitch.listeners.commands.CommandConsumer;
 import com.digiunion.unifiedbots.twitch.listeners.message.MessageService;
 import com.digiunion.unifiedbots.twitch.repositories.channel.ChannelRepository;
 import com.digiunion.unifiedbots.twitch.services.info.InfoService;
-
 import com.github.philippheuer.credentialmanager.domain.OAuth2Credential;
 import com.github.twitch4j.TwitchClient;
 import com.github.twitch4j.TwitchClientBuilder;
@@ -172,16 +170,21 @@ public final class TwitchBot implements BotService {
   }
 
   @Override
-  public void load(List<Channel> list) {
+  public void load(List<Channel> channels) {
 
-    if (list.isEmpty()) {
+    if (!channels.isEmpty()) {
       log.error("Could not initiate loading channels; the list is empty");
       return;
     }
 
-    list.stream().forEach(channel -> joinChannel(channel.getChannelName()));
+    channels.parallelStream().forEach(channel -> joinChannel(channel.getChannelName()));
     log.info("Loaded all of stored channels");
 
+  }
+
+  @Override
+  public void terminate() {
+    client.close();
   }
 
 }

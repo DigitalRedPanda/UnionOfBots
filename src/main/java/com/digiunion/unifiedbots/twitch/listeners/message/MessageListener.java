@@ -31,7 +31,7 @@ public non-sealed class MessageListener implements MessageService {
             "Do You want %s to become your mom? She/He's a queen, بس انت تزاعق كثير لدرجة كل البوتات الثانية كرهوك"
                 .formatted(channel));
 
-        log.info("A spamming bot called {} has been banned on {}", user, channel);
+        log.warn("A spamming bot called {} has been banned on {}", user, channel);
 
       }
 

@@ -1,7 +1,6 @@
 package com.digiunion.unifiedbots.twitch;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import org.springframework.stereotype.Service;
 
@@ -13,6 +12,8 @@ public sealed interface BotService permits TwitchBot {
  void initialize();
 
  void load(List<Channel> list);
+
+ void terminate();
 
  boolean joinChannel(String channel);
 

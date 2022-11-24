@@ -9,6 +9,8 @@ public sealed interface DiscordBot permits BotService {
 
  void run();
 
+ void stop();
+
  boolean isRunning();
 
 }

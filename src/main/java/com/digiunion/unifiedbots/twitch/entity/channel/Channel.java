@@ -4,13 +4,13 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 @Entity
-@Getter
+@Data
 @RequiredArgsConstructor
 @NoArgsConstructor
 public class Channel {
@@ -19,6 +19,9 @@ public class Channel {
  @Column(name = "name", columnDefinition = "VARCHAR(40)")
  @NonNull
  private String channelName;
+
+ @Column(columnDefinition = "counter INTEGER DEFAULT 0")
+ private int counter;
 
  // @Column(name = "absent", nullable = false, columnDefinition = "INTEGER 0
  // CHECK(absent IN (0,1))")

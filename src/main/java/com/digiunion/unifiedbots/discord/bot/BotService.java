@@ -23,8 +23,6 @@ public final class BotService implements DiscordBot {
   @Getter
   private DiscordClient client;
 
-  // private User self;
-
   @Override
   public void initialize() {
     client = DiscordClient.create(info.getToken());
@@ -43,6 +41,11 @@ public final class BotService implements DiscordBot {
       var message = event.getMessage().getContent();
 
     })));
+  }
+
+  @Override
+  public void stop() {
+
   }
 
   @Override
